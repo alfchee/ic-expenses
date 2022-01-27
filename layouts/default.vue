@@ -100,9 +100,8 @@ export default {
 
   methods: {
     async signOut() {
-      await this.$store.dispatch('auth/signOut');
-
       this.$router.push('/login')
+      await this.$store.dispatch('auth/signOut');
     }
   }
 }

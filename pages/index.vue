@@ -83,7 +83,5 @@
 <script>
 export default {
   name: 'IndexPage',
-
-  // middleware: 'router-auth'
 }
 </script>

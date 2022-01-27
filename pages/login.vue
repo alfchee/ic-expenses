@@ -5,8 +5,8 @@
                 <v-card-title>Login</v-card-title>
                 <v-card-text>
                     <v-form>
-                        <v-text-field v-model="formData.email" required label="Email" />
-                        <v-text-field v-model="formData.password" required label="Password" type="password" />
+                        <v-text-field v-model="formData.email" required label="Email" @keyup.enter="signIn" />
+                        <v-text-field v-model="formData.password" required label="Password" type="password" :error-messages="loginError" @keyup.enter="signIn" />
 
                         <v-btn @click="signIn">Login</v-btn>
                     </v-form>
@@ -32,29 +32,20 @@ export default Vue.extend({
 
     computed: {
         ...mapState({
-            user: (state: any) => state.auth.user
+            user: (state: any) => state.auth.user,
+            loginError: (state: any) => state.auth.loginError
         })
-    },
-
-    watch: {
-        user(val) {
-            if(val?.uid) {
-                return this.$router.push('/')
-            }
-        }
     },
 
     methods: {
         async signIn() {
-            try {
-                await this.$store.dispatch('auth/signInWithCreds', {
-                    email: this.formData.email,
-                    password: this.formData.password
-                });
-                this.formData = { email: '', password: '' }
-            } catch (error) {
-                console.log(error);
-            }
+            await this.$store.dispatch('auth/signInWithCreds', {
+                email: this.formData.email,
+                password: this.formData.password
+            });
+            this.formData = { email: '', password: '' };
+
+            this.$router.push('/')
         }
     }
 })

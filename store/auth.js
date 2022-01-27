@@ -1,12 +1,16 @@
 import { auth } from "~/services/fireinit";
 
 export const state = () => ({
-    user: null
+    user: null,
+    loginError: '',
   })
 
 export const mutations = {
     setUser(state, user) {
         state.user = user;
+    },
+    setError(state, message) {
+        state.loginError = message;
     }
 }
 
@@ -16,14 +20,20 @@ export const actions = {
             const userCredential = await auth.signInWithEmailAndPassword(auth.getAuth(), email, password)
 
             commit('setUser', userCredential.user);
+            commit('setError', '');
         } catch (error) {
+            commit('setError', error.message);
             console.error(error);
         }
     },
 
     async signOut({ commit }) {
-        await auth.signOut(auth.getAuth()).then(() => {
+        try {
             commit('setUser', null)
-        }).catch(err => console.error(err));
+
+            await auth.signOut(auth.getAuth())
+        } catch(error) {
+            console.error(error);
+        }
     }
 }
