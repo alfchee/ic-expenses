@@ -7,7 +7,7 @@
       fixed
       app
     >
-      <v-list>
+      <v-list flat>
         <v-list-item
           v-for="(item, i) in items"
           :key="i"
@@ -20,6 +20,14 @@
           </v-list-item-action>
           <v-list-item-content>
             <v-list-item-title v-text="item.title" />
+          </v-list-item-content>
+        </v-list-item>
+        <v-list-item @click="signOut">
+          <v-list-item-action>
+            <v-icon>mdi-apps</v-icon>
+          </v-list-item-action>
+          <v-list-item-content>
+            <v-list-item-title>Sign Out</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
       </v-list>
@@ -65,6 +73,7 @@
 <script>
 export default {
   name: 'DefaultLayout',
+
   data() {
     return {
       clipped: false,
@@ -88,5 +97,12 @@ export default {
       title: 'Vuetify.js',
     }
   },
+
+  methods: {
+    async signOut() {
+      this.$router.push('/login')
+      await this.$store.dispatch('auth/signOut');
+    }
+  }
 }
 </script>
