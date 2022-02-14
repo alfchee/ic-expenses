@@ -19,12 +19,13 @@
   </v-app>
 </template>
 
-<script>
+<script lang="ts">
+import Vue from 'vue'
 import { mapState } from 'vuex'
 import MainNavigation from '~/components/MainNavigation.vue'
 import AppBar from '~/components/AppBar.vue'
 
-export default {
+export default Vue.extend({
   name: 'DefaultLayout',
 
   components: { AppBar, MainNavigation },
@@ -40,8 +41,8 @@ export default {
       return this.$store.getters['auth/isAuth']
     },
     ...mapState({
-      user: (state) => state.auth.user,
+      user: (state: any) => state.auth.user,
     }),
   },
-}
+})
 </script>
