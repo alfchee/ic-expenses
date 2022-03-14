@@ -41,3 +41,9 @@ export const actions = {
     }
   },
 }
+
+export const getters = {
+  isAuth(state) {
+    return state.user !== null
+  },
+}
