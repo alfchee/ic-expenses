@@ -31,20 +31,24 @@
 <script lang="ts">
 import Vue from 'vue'
 import { mapState } from 'vuex'
+
 export default Vue.extend({
-  name: 'LoginAuth',
+  name: 'LoginPage',
+
   data: () => ({
     formData: {
       email: '',
       password: '',
     },
   }),
+
   computed: {
     ...mapState({
       user: (state: any) => state.auth.user,
       loginError: (state: any) => state.auth.loginError,
     }),
   },
+
   methods: {
     async signIn() {
       await this.$store.dispatch('auth/signInWithCreds', {
