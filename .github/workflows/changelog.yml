@@ -1,0 +1,40 @@
+name: Generate Changelog
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  changelog:
+    name: Changelog Generation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get package version
+        id: package-version
+        uses: koj-co/package-version-action@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@{latest-release}
+        with:
+          commitMode: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ steps.package-version.outputs.package-version }}
+          release_name: Release ${{ steps.package-version.outputs.package-version }}
+          draf: false
+          prerelease: false
+          body: ${{steps.changelog.outputs.changelog}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
