@@ -1,0 +1,27 @@
+name: Change Version
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, 'CI: bumps version')"
+    steps:
+      - name: Clone the repo
+        uses: actions/checkout@v1
+        with:
+          token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+
+      - name: Automated Version bump
+        uses: 'phips28/gh-action-bump-version@master'
+        id: version_bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          commit-message: 'CI: bumps version to {{ version }} [skip ci]'
+          target-branch: 'dev'
+
+    outputs:
+      version: ${{ steps.version_bump.outputs.newTag }}
