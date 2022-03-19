@@ -1,3 +1,4 @@
+import { setPersistence, browserLocalPersistence } from 'firebase/auth'
 import { auth } from '~/services/fireinit'
 
 export const state = () => ({
@@ -17,6 +18,7 @@ export const mutations = {
 export const actions = {
     async signInWithCreds({ commit }, { email, password }) {
         try {
+            await setPersistence(auth.getAuth(), browserLocalPersistence)
             const userCredential = await auth.signInWithEmailAndPassword(
                 auth.getAuth(),
                 email,
