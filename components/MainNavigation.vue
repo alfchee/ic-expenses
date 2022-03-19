@@ -58,6 +58,11 @@ export default Vue.extend({
         title: 'Inspire',
         to: '/inspire',
       },
+      {
+        icon: 'mdi-bank',
+        title: 'Accounts',
+        to: '/accounts',
+      },
     ],
   }),
   computed: {
