@@ -16,16 +16,16 @@ import {
 export const state = () => ({
     categories: [
         {
-            text: 'Evangelismo',
-            value: Category.evangelismo,
+            text: 'Evangelism',
+            value: Category.evangelism,
         },
         {
             text: 'Edificación',
             value: Category.edificacion,
         },
         {
-            text: 'Benevolencia',
-            value: Category.benevolencia,
+            text: 'Benevolence',
+            value: Category.benevolence,
         },
     ],
     subcategories: [],

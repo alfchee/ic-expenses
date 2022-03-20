@@ -6,8 +6,8 @@ import {
 } from 'firebase/firestore'
 
 export enum Category {
-    evangelismo = 'evangelismo',
-    benevolencia = 'benevolencia',
+    evangelism = 'evangelism',
+    benevolence = 'benevolence',
     edificacion = 'edificacion',
 }
 
