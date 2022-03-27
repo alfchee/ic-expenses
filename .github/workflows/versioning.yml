@@ -20,8 +20,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          commit-message: 'CI: bumps version to {{ version }} [skip ci]'
+          commit-message: 'CI: bumps version [skip ci]'
           target-branch: 'dev'
+          tag-prefix: 'v'
 
     outputs:
       version: ${{ steps.version_bump.outputs.newTag }}

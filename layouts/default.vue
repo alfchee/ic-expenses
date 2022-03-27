@@ -7,7 +7,7 @@
 
     <!-- app main area -->
     <v-main>
-      <v-container>
+      <v-container no-gutters>
         <Nuxt />
       </v-container>
     </v-main>
