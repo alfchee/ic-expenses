@@ -163,7 +163,7 @@ declare module 'vue/types/vue' {
     interface Vue {
         headers: any[]
         dialog: boolean
-        accounts: any
+        accounts: Account[]
         currencies: Currency[]
         formTitle: string
         dialogDelete: boolean
