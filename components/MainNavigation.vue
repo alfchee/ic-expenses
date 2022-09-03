@@ -64,6 +64,11 @@ export default Vue.extend({
                 to: '/incomes',
             },
             {
+                icon: 'mdi-select-group',
+                title: 'Expenses',
+                to: '/expenses',
+            },
+            {
                 icon: 'mdi-bank',
                 title: 'Accounts',
                 to: '/accounts',
