@@ -1,5 +1,10 @@
 <template>
-    <v-data-table :headers="headers" :items="incomes" :items-per-page="20">
+    <v-data-table
+        :headers="headers"
+        :items="incomes"
+        :items-per-page="20"
+        :loading="isLoading"
+    >
         <!-- DataTable Header Template -->
         <template #top>
             <v-toolbar flat>
@@ -170,6 +175,7 @@ declare module 'vue/types/vue' {
         editedIncome: any
         defaultIncome: any
         reloadData: boolean
+        isLoading: boolean
         editIncome: () => void
         deleteIncome: () => void
         save: () => Promise<void>
@@ -211,6 +217,7 @@ export default Vue.extend({
         dialog: false,
         dialogDelete: false,
         editedIndex: -1,
+        isLoading: false,
         editedIncome: {
             amount: 0,
             description: '',
@@ -232,10 +239,11 @@ export default Vue.extend({
     }),
 
     async fetch() {
+        await this.$store.dispatch('accounts/fetchAccounts')
+        await this.$store.dispatch('subcats/fetchSubCategories')
+
         if (this.reloadData) {
             this.$store.dispatch('incomes/clear')
-            await this.$store.dispatch('accounts/fetchAccounts')
-            await this.$store.dispatch('subcats/fetchSubCategories')
             await this.fetchIncomes()
         }
     },
@@ -277,8 +285,10 @@ export default Vue.extend({
         formatDate(date: string) {
             return DateTime.fromISO(date).toFormat('dd/LL/yyyy')
         },
-        fetchIncomes() {
-            return this.$store.dispatch('incomes/fetchIncomes')
+        async fetchIncomes() {
+            this.isLoading = true
+            await this.$store.dispatch('incomes/fetchIncomes')
+            this.isLoading = false
         },
         async save(): Promise<void> {
             if (this.editedIndex === -1) {
