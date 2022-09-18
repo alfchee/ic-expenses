@@ -62,7 +62,7 @@ export const actions = {
         commit('clearSubCats')
     },
     async fetchSubCategories({ commit, state }: any) {
-        if (state.subcategories.lenght === 0) {
+        if (state.subcategories.length === 0) {
             const firestore = db.getFirestore()
             const querySnapshot = await getDocs(
                 collection(firestore, 'subcats')

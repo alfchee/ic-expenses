@@ -44,7 +44,7 @@ export const actions = {
         commit('clearAccounts')
     },
     async fetchAccounts({ commit, state }: any) {
-        if (state.accounts.lenght === 0) {
+        if (state.accounts.length === 0) {
             const firestore = db.getFirestore()
             const querySnapshot = await getDocs(
                 collection(firestore, 'accounts')
