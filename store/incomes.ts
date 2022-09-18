@@ -82,7 +82,13 @@ export const actions = {
             await addDoc(collection(firestore, 'incomes'), income)
         ).withConverter(incomeConverter)
 
-        commit('setIncome', new Income({ ...income, id: newIncome.id }))
+        commit('setIncome', {
+            ...income,
+            id: newIncome.id,
+            dateTime: income.dateTime.toDate().toISOString(),
+            createdAt: income.createdAt?.toDate().toISOString(),
+            updatedAt: income.updatedAt?.toDate().toISOString(),
+        })
     },
 
     async updateIncome({ commit }: any, income: Income) {

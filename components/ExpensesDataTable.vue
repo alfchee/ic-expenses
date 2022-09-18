@@ -3,7 +3,10 @@
         <!-- DataTable Header template -->
         <template #top>
             <v-toolbar flat>
-                <v-toolbar-title>Expenses</v-toolbar-title>
+                <v-toolbar-title
+                    >Expenses from {{ titleStartDate }} to
+                    {{ titleEndDate }}</v-toolbar-title
+                >
                 <v-spacer />
 
                 <!-- Create/Edit Expenses Dialog -->
@@ -122,6 +125,14 @@
             </v-toolbar>
         </template>
 
+        <template #item.dateTime="{ item }">
+            {{ formatDate(item.dateTime) }}
+        </template>
+
+        <template #item.createdAt="{ item }">
+            {{ formatDate(item.createdAt) }}
+        </template>
+
         <template #item.actions="{ item }">
             <v-icon small class="mr-2" @click="editExpense(item)"
                 >mdi-pencil</v-icon
@@ -135,6 +146,8 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import { DateTime } from 'luxon'
+import { Timestamp } from 'firebase/firestore'
 import { mapState } from 'vuex'
 import { Account } from '~/models/account'
 import { Currency } from '~/models/currencies'
@@ -150,12 +163,15 @@ declare module 'vue/types/vue' {
         editedIndex: number
         editedExpense: any
         defaultExpense: any
+        reloadData: boolean
         editExpense: () => void
         deleteExpense: () => void
         save: () => Promise<void>
         deleteExpenseConfirm: () => Promise<void>
         closeExpenseForm: () => void
         closeDelete: () => void
+        formatDate: () => string
+        fetchExpenses: () => Promise<void>
     }
 }
 
@@ -210,10 +226,12 @@ export default Vue.extend({
     }),
 
     async fetch() {
-        this.$store.dispatch('expenses/clear')
-        await this.$store.dispatch('accounts/fetchAccounts')
-        await this.$store.dispatch('subcats/fetchSubCategories')
-        await this.$store.dispatch('expenses/fetchExpenses')
+        if (this.reloadData) {
+            this.$store.dispatch('expenses/clear')
+            await this.$store.dispatch('accounts/fetchAccounts')
+            await this.$store.dispatch('subcats/fetchSubCategories')
+            await this.fetchExpenses()
+        }
     },
 
     fetchOnServer: false,
@@ -222,11 +240,20 @@ export default Vue.extend({
         formTitle() {
             return this.editedIndex === -1 ? 'New Expense' : 'Edit Expense'
         },
+        titleStartDate() {
+            return DateTime.fromISO(this.startDate).toFormat('dd - LLL - yyyy')
+        },
+        titleEndDate() {
+            return DateTime.fromISO(this.endDate).toFormat('dd - LLL - yyyy')
+        },
         ...mapState({
             expenses: (state: any) => state.expenses.expenses,
             accounts: (state: any) => state.accounts.accounts as Account[],
             currencies: (state: any) => state.accounts.currencies as Currency[],
             subcategories: (state: any) => state.subcats.subcategories,
+            reloadData: (state: any) => state.expenses.reloadData,
+            startDate: (state: any) => state.expenses.dateStart,
+            endDate: (state: any) => state.expenses.dateEnd,
         }),
     },
 
@@ -241,17 +268,33 @@ export default Vue.extend({
     },
 
     methods: {
+        formatDate(date: string) {
+            return DateTime.fromISO(date).toFormat('dd/LL/yyyy')
+        },
+        fetchExpenses() {
+            return this.$store.dispatch('expenses/fetchExpenses')
+        },
         async save(): Promise<void> {
             if (this.editedIndex === -1) {
-                await this.$store.dispatch(
-                    'expenses/addExpense',
-                    this.editedExpense
-                )
+                await this.$store.dispatch('expenses/addExpense', {
+                    ...this.editedExpense,
+                    dateTime: Timestamp.fromDate(
+                        DateTime.fromISO(this.editedExpense.dateTime).toJSDate()
+                    ),
+                    createdAt: Timestamp.fromDate(
+                        DateTime.fromISO(
+                            this.editedExpense.createdAt
+                        ).toJSDate()
+                    ),
+                })
             } else {
-                await this.$store.dispatch(
-                    'expenses/updateExpense',
-                    this.editedExpense
-                )
+                await this.$store.dispatch('expenses/updateExpense', {
+                    ...this.editedExpense,
+                    dateTime: Timestamp.fromDate(
+                        DateTime.fromISO(this.editedExpense.dateTime).toJSDate()
+                    ),
+                    updatedAt: Timestamp.fromDate(new Date()),
+                })
             }
             this.closeExpenseForm()
         },

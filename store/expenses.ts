@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon'
 import {
     collection,
     getDocs,
@@ -5,12 +6,17 @@ import {
     updateDoc,
     deleteDoc,
     addDoc,
+    query,
+    where,
 } from 'firebase/firestore'
 import { db } from '~/services/fireinit'
 import { Expense, expenseConverter } from '~/models/expense'
 
 export const state = () => ({
     expenses: [],
+    dateStart: DateTime.now().startOf('month').toISO(),
+    dateEnd: DateTime.now().endOf('month').toISO(),
+    reloadData: true,
 })
 
 export const mutations = {
@@ -42,11 +48,30 @@ export const actions = {
         commit('clearExpenses')
     },
 
-    async fetchExpenses({ commit }: any) {
+    async fetchExpenses({ commit, state }: any) {
         const firestore = db.getFirestore()
-        const querySnapshot = await getDocs(collection(firestore, 'expenses'))
+        const startDate = db.Timestamp.fromDate(
+            DateTime.fromISO(state.dateStart).toJSDate()
+        )
+        const endDate = db.Timestamp.fromDate(
+            DateTime.fromISO(state.dateEnd).toJSDate()
+        )
+        const q = query(
+            collection(firestore, 'expenses'),
+            where('dateTime', '>=', startDate),
+            where('dateTime', '<=', endDate)
+        )
+
+        const querySnapshot = await getDocs(q)
         const expenses = querySnapshot.docs.map((doc) => {
-            return { id: doc.id, ...doc.data() } as Expense
+            const data = doc.data()
+            return {
+                id: doc.id,
+                ...data,
+                dateTime: data.dateTime.toDate().toISOString(),
+                createdAt: data.createdAt?.toDate().toISOString(),
+                updatedAt: data.updatedAt?.toDate().toISOString(),
+            } as Expense
         })
         commit('setExpenses', expenses)
     },
@@ -57,7 +82,13 @@ export const actions = {
             await addDoc(collection(firestore, 'expenses'), expense)
         ).withConverter(expenseConverter)
 
-        commit('setExpense', new Expense({ ...expense, id: newExpense.id }))
+        commit('setExpense', {
+            ...expense,
+            id: newExpense.id,
+            dateTime: expense.dateTime.toDate().toISOString(),
+            createdAt: expense.createdAt?.toDate().toISOString(),
+            updatedAt: expense.updatedAt?.toDate().toISOString(),
+        })
     },
 
     async updateExpense({ commit }: any, expense: Expense) {
