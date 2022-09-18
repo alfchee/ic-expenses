@@ -3,7 +3,10 @@
         <!-- DataTable Header Template -->
         <template #top>
             <v-toolbar flat>
-                <v-toolbar-title>Incomes</v-toolbar-title>
+                <v-toolbar-title
+                    >Incomes from {{ titleStartDate }} to
+                    {{ titleEndDate }}</v-toolbar-title
+                >
                 <v-spacer />
 
                 <!-- Create/Edit Incomes Dialog -->
@@ -125,6 +128,14 @@
             </v-toolbar>
         </template>
 
+        <template #item.dateTime="{ item }">
+            {{ formatDate(item.dateTime) }}
+        </template>
+
+        <template #item.createdAt="{ item }">
+            {{ formatDate(item.createdAt) }}
+        </template>
+
         <template #item.actions="{ item }">
             <v-icon small class="mr-2" @click="editIncome(item)"
                 >mdi-pencil</v-icon
@@ -138,6 +149,8 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import { DateTime } from 'luxon'
+import { Timestamp } from 'firebase/firestore'
 import { mapState } from 'vuex'
 import { Account } from '~/models/account'
 import { Currency } from '~/models/currencies'
@@ -156,12 +169,15 @@ declare module 'vue/types/vue' {
         editedIndex: number
         editedIncome: any
         defaultIncome: any
+        reloadData: boolean
         editIncome: () => void
         deleteIncome: () => void
         save: () => Promise<void>
         deleteIncomeConfirm: () => Promise<void>
         closeIncomeForm: () => void
         closeDelete: () => void
+        fetchIncomes: () => Promise<void>
+        formatDate: () => string
     }
 }
 
@@ -216,10 +232,12 @@ export default Vue.extend({
     }),
 
     async fetch() {
-        this.$store.dispatch('incomes/clear')
-        await this.$store.dispatch('accounts/fetchAccounts')
-        await this.$store.dispatch('subcats/fetchSubCategories')
-        await this.$store.dispatch('incomes/fetchIncomes')
+        if (this.reloadData) {
+            this.$store.dispatch('incomes/clear')
+            await this.$store.dispatch('accounts/fetchAccounts')
+            await this.$store.dispatch('subcats/fetchSubCategories')
+            await this.fetchIncomes()
+        }
     },
 
     fetchOnServer: false,
@@ -228,11 +246,20 @@ export default Vue.extend({
         formTitle() {
             return this.editedIndex === -1 ? 'New Income' : 'Edit Income'
         },
+        titleStartDate() {
+            return DateTime.fromISO(this.startDate).toFormat('dd - LLL - yyyy')
+        },
+        titleEndDate() {
+            return DateTime.fromISO(this.endDate).toFormat('dd - LLL - yyyy')
+        },
         ...mapState({
             incomes: (state: any) => state.incomes.incomes,
             accounts: (state: any) => state.accounts.accounts as Account[],
             currencies: (state: any) => state.accounts.currencies as Currency[],
             subcategories: (state: any) => state.subcats.subcategories,
+            reloadData: (state: any) => state.incomes.reloadData,
+            startDate: (state: any) => state.incomes.dateStart,
+            endDate: (state: any) => state.incomes.dateEnd,
         }),
     },
 
@@ -247,17 +274,31 @@ export default Vue.extend({
     },
 
     methods: {
+        formatDate(date: string) {
+            return DateTime.fromISO(date).toFormat('dd/LL/yyyy')
+        },
+        fetchIncomes() {
+            return this.$store.dispatch('incomes/fetchIncomes')
+        },
         async save(): Promise<void> {
             if (this.editedIndex === -1) {
-                await this.$store.dispatch(
-                    'incomes/addIncome',
-                    this.editedIncome
-                )
+                await this.$store.dispatch('incomes/addIncome', {
+                    ...this.editedIncome,
+                    dateTime: Timestamp.fromDate(
+                        DateTime.fromISO(this.editedIncome.dateTime).toJSDate()
+                    ),
+                    createdAt: Timestamp.fromDate(
+                        DateTime.fromISO(this.editedIncome.createdAt).toJSDate()
+                    ),
+                })
             } else {
-                await this.$store.dispatch(
-                    'incomes/updateIncome',
-                    this.editedIncome
-                )
+                await this.$store.dispatch('incomes/updateIncome', {
+                    ...this.editedIncome,
+                    dateTime: Timestamp.fromDate(
+                        DateTime.fromISO(this.editedIncome.dateTime).toJSDate()
+                    ),
+                    updatedAt: Timestamp.fromDate(new Date()),
+                })
             }
             this.closeIncomeForm()
         },

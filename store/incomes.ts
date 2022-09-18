@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon'
 import {
     collection,
     getDocs,
@@ -5,12 +6,17 @@ import {
     updateDoc,
     deleteDoc,
     addDoc,
+    query,
+    where,
 } from 'firebase/firestore'
 import { db } from '~/services/fireinit'
 import { Income, incomeConverter } from '~/models/income'
 
 export const state = () => ({
     incomes: [],
+    dateStart: DateTime.now().startOf('month').toISO(),
+    dateEnd: DateTime.now().endOf('month').toISO(),
+    reloadData: true,
 })
 
 export const mutations = {
@@ -18,6 +24,7 @@ export const mutations = {
         for (const income of incomes) {
             state.incomes.push(income)
         }
+        state.reloadData = false
     },
     setIncome(state: any, income: Income) {
         const found = state.incomes.find((i: Income) => i.id === income.id)
@@ -40,11 +47,30 @@ export const actions = {
         commit('clearIncomes')
     },
 
-    async fetchIncomes({ commit }: any) {
+    async fetchIncomes({ commit, state }: any) {
         const firestore = db.getFirestore()
-        const querySnapshot = await getDocs(collection(firestore, 'incomes'))
+        const startDate = db.Timestamp.fromDate(
+            DateTime.fromISO(state.dateStart).toJSDate()
+        )
+        const endDate = db.Timestamp.fromDate(
+            DateTime.fromISO(state.dateEnd).toJSDate()
+        )
+        const q = query(
+            collection(firestore, 'incomes'),
+            where('dateTime', '>=', startDate),
+            where('dateTime', '<=', endDate)
+        )
+
+        const querySnapshot = await getDocs(q)
         const incomes = querySnapshot.docs.map((doc) => {
-            return { id: doc.id, ...doc.data() } as Income
+            const data = doc.data()
+            return {
+                id: doc.id,
+                ...data,
+                dateTime: data.dateTime.toDate().toISOString(),
+                createdAt: data.createdAt?.toDate().toISOString(),
+                updatedAt: data.updatedAt?.toDate().toISOString(),
+            } as Income
         })
 
         commit('setIncomes', incomes)

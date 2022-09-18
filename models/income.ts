@@ -3,6 +3,7 @@ import {
     DocumentData,
     FirestoreDataConverter,
     WithFieldValue,
+    Timestamp,
 } from 'firebase/firestore'
 
 type Account = {
@@ -32,9 +33,9 @@ export class Income {
     currency!: Currency
     category!: SubCat
     amount!: number
-    dateTime!: Date
-    createdAt!: Date
-    updatedAt?: Date
+    dateTime!: Timestamp
+    createdAt!: Timestamp
+    updatedAt?: Timestamp
 }
 
 type IncomeConverterType = FirestoreDataConverter<Income>
