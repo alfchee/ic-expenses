@@ -14,6 +14,7 @@ import { Income, incomeConverter } from '~/models/income'
 
 export const state = () => ({
     incomes: [],
+    selectedAccountId: '',
     dateStart: DateTime.now().startOf('month').toISO(),
     dateEnd: DateTime.now().endOf('month').toISO(),
     reloadData: true,
@@ -40,6 +41,26 @@ export const mutations = {
     clearIncomes(state: any) {
         state.incomes = []
     },
+    setCurrentMonth(state: any) {
+        state.dateStart = DateTime.now().startOf('month').toISO()
+        state.dateEnd = DateTime.now().endOf('month').toISO()
+        state.reloadData = true
+    },
+    setLastMonth(state: any) {
+        state.dateStart = DateTime.now()
+            .minus({ months: 1 })
+            .startOf('month')
+            .toISO()
+        state.dateEnd = DateTime.now()
+            .minus({ months: 1 })
+            .endOf('month')
+            .toISO()
+        state.reloadData = true
+    },
+    setSelectedAccount(state: any, accountId: string) {
+        state.selectedAccountId = accountId
+        state.reloadData = true
+    },
 }
 
 export const actions = {
@@ -57,6 +78,7 @@ export const actions = {
         )
         const q = query(
             collection(firestore, 'incomes'),
+            where('account', '==', state.selectedAccountId),
             where('dateTime', '>=', startDate),
             where('dateTime', '<=', endDate)
         )
@@ -105,5 +127,17 @@ export const actions = {
         const firestore = db.getFirestore()
         await deleteDoc(doc(firestore, 'incomes', income.id!))
         commit('deleteIncome', income)
+    },
+
+    setCurrentTimerange({ commit }: any) {
+        commit('setCurrentMonth')
+    },
+
+    setLastMonthTimerange({ commit }: any) {
+        commit('setLastMonth')
+    },
+
+    setSelectedAccount({ commit }: any, accountId: string) {
+        commit('setSelectedAccount', accountId)
     },
 }

@@ -52,6 +52,8 @@ export const actions = {
             const accounts = querySnapshot.docs.map((doc) => {
                 return { id: doc.id, ...doc.data() } as Account
             })
+            // sorting the accounts by name before store them
+            accounts.sort((a, b) => a.name.localeCompare(b.name))
 
             commit('setAccounts', accounts)
         }

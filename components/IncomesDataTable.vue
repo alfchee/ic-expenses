@@ -8,9 +8,19 @@
         <!-- DataTable Header Template -->
         <template #top>
             <v-toolbar flat>
-                <v-toolbar-title
-                    >Incomes from {{ titleStartDate }} to
-                    {{ titleEndDate }}</v-toolbar-title
+                <v-toolbar-title> Filter </v-toolbar-title>
+                <v-col cols="3">
+                    <v-select
+                        :items="accounts"
+                        item-value="id"
+                        item-text="name"
+                        label="Account"
+                        :value="selectedAccountId"
+                        @change="onChangeAccount"
+                    />
+                </v-col>
+                <v-btn :disabled="!reloadData" @click="onReloadData"
+                    >Reload</v-btn
                 >
                 <v-spacer />
 
@@ -184,6 +194,7 @@ declare module 'vue/types/vue' {
         closeDelete: () => void
         fetchIncomes: () => Promise<void>
         formatDate: () => string
+        onReloadData: () => Promise<void>
     }
 }
 
@@ -242,9 +253,10 @@ export default Vue.extend({
         await this.$store.dispatch('accounts/fetchAccounts')
         await this.$store.dispatch('subcats/fetchSubCategories')
 
+        this.$store.dispatch('incomes/setSelectedAccount', this.accounts[0].id)
+
         if (this.reloadData) {
-            this.$store.dispatch('incomes/clear')
-            await this.fetchIncomes()
+            this.onReloadData()
         }
     },
 
@@ -268,6 +280,7 @@ export default Vue.extend({
             reloadData: (state: any) => state.incomes.reloadData,
             startDate: (state: any) => state.incomes.dateStart,
             endDate: (state: any) => state.incomes.dateEnd,
+            selectedAccountId: (state: any) => state.incomes.selectedAccountId,
         }),
     },
 
@@ -284,6 +297,13 @@ export default Vue.extend({
     methods: {
         formatDate(date: string) {
             return DateTime.fromISO(date).toFormat('dd/LL/yyyy')
+        },
+        onChangeAccount(value: any) {
+            this.$store.dispatch('incomes/setSelectedAccount', value)
+        },
+        async onReloadData() {
+            this.$store.dispatch('incomes/clear')
+            await this.fetchIncomes()
         },
         async fetchIncomes() {
             this.isLoading = true
