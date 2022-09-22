@@ -8,9 +8,19 @@
         <!-- DataTable Header template -->
         <template #top>
             <v-toolbar flat>
-                <v-toolbar-title
-                    >Expenses from {{ titleStartDate }} to
-                    {{ titleEndDate }}</v-toolbar-title
+                <v-toolbar-title> Filter </v-toolbar-title>
+                <v-col cols="3">
+                    <v-select
+                        :items="accounts"
+                        item-value="id"
+                        item-text="name"
+                        label="Account"
+                        :value="selectedAccountId"
+                        @change="onChangeAccount"
+                    />
+                </v-col>
+                <v-btn :disabled="!reloadData" @click="onReloadData"
+                    >Reload</v-btn
                 >
                 <v-spacer />
 
@@ -178,6 +188,7 @@ declare module 'vue/types/vue' {
         closeDelete: () => void
         formatDate: () => string
         fetchExpenses: () => Promise<void>
+        onReloadData: () => Promise<void>
     }
 }
 
@@ -236,6 +247,8 @@ export default Vue.extend({
         await this.$store.dispatch('accounts/fetchAccounts')
         await this.$store.dispatch('subcats/fetchSubCategories')
 
+        this.$store.dispatch('expenses/setSelectedAccount', this.accounts[0].id)
+
         if (this.reloadData) {
             this.$store.dispatch('expenses/clear')
             await this.fetchExpenses()
@@ -262,6 +275,7 @@ export default Vue.extend({
             reloadData: (state: any) => state.expenses.reloadData,
             startDate: (state: any) => state.expenses.dateStart,
             endDate: (state: any) => state.expenses.dateEnd,
+            selectedAccountId: (state: any) => state.incomes.selectedAccountId,
         }),
     },
 
@@ -278,6 +292,13 @@ export default Vue.extend({
     methods: {
         formatDate(date: string) {
             return DateTime.fromISO(date).toFormat('dd/LL/yyyy')
+        },
+        onChangeAccount(value: any) {
+            this.$store.dispatch('expenses/setSelectedAccount', value)
+        },
+        async onReloadData() {
+            this.$store.dispatch('expenses/clear')
+            await this.fetchExpenses()
         },
         async fetchExpenses() {
             this.isLoading = true

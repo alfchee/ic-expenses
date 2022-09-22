@@ -14,6 +14,7 @@ import { Expense, expenseConverter } from '~/models/expense'
 
 export const state = () => ({
     expenses: [],
+    selectedAccountId: '',
     dateStart: DateTime.now().startOf('month').toISO(),
     dateEnd: DateTime.now().endOf('month').toISO(),
     reloadData: true,
@@ -24,6 +25,7 @@ export const mutations = {
         for (const expense of expenses) {
             state.expenses.push(expense)
         }
+        state.reloadData = false
     },
     setExpense(state: any, expense: Expense) {
         const found = state.expenses.find((e: Expense) => e.id === expense.id)
@@ -40,6 +42,26 @@ export const mutations = {
     },
     clearExpenses(state: any) {
         state.expenses = []
+    },
+    setCurrentMonth(state: any) {
+        state.dateStart = DateTime.now().startOf('month').toISO()
+        state.dateEnd = DateTime.now().endOf('month').toISO()
+        state.reloadData = true
+    },
+    setLastMonth(state: any) {
+        state.dateStart = DateTime.now()
+            .minus({ months: 1 })
+            .startOf('month')
+            .toISO()
+        state.dateEnd = DateTime.now()
+            .minus({ months: 1 })
+            .endOf('month')
+            .toISO()
+        state.reloadData = true
+    },
+    setSelectedAccount(state: any, accountId: string) {
+        state.selectedAccountId = accountId
+        state.reloadData = true
     },
 }
 
@@ -58,6 +80,7 @@ export const actions = {
         )
         const q = query(
             collection(firestore, 'expenses'),
+            where('account', '==', state.selectedAccountId),
             where('dateTime', '>=', startDate),
             where('dateTime', '<=', endDate)
         )
@@ -107,5 +130,17 @@ export const actions = {
         const firestore = db.getFirestore()
         await deleteDoc(doc(firestore, 'expenses', expense.id!))
         commit('deleteExpense', expense)
+    },
+
+    setCurrentTimerange({ commit }: any) {
+        commit('setCurrentMonth')
+    },
+
+    setLastMonthTimerange({ commit }: any) {
+        commit('setLastMonth')
+    },
+
+    setSelectedAccount({ commit }: any, accountId: string) {
+        commit('setSelectedAccount', accountId)
     },
 }
