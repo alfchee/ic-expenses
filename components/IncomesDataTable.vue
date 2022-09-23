@@ -9,7 +9,7 @@
         <template #top>
             <v-toolbar flat>
                 <v-toolbar-title> Filter </v-toolbar-title>
-                <v-col cols="3">
+                <v-col cols="3" class="mt-5">
                     <v-select
                         :items="accounts"
                         item-value="id"
@@ -17,6 +17,16 @@
                         label="Account"
                         :value="selectedAccountId"
                         @change="onChangeAccount"
+                    />
+                </v-col>
+                <v-col cols="3" class="mt-5">
+                    <v-select
+                        :items="timeRanges"
+                        item-value="value"
+                        item-text="text"
+                        label="Time Range"
+                        value="current-month"
+                        @change="onChangeTimerange"
                     />
                 </v-col>
                 <v-btn :disabled="!reloadData" @click="onReloadData"
@@ -175,6 +185,7 @@ import { SubCategory } from '~/models/sub-category'
 declare module 'vue/types/vue' {
     interface Vue {
         headers: any[]
+        timeRanges: any[]
         dialog: boolean
         subcategories: SubCategory[]
         incomes: Income[]
@@ -195,6 +206,8 @@ declare module 'vue/types/vue' {
         fetchIncomes: () => Promise<void>
         formatDate: () => string
         onReloadData: () => Promise<void>
+        onChangeAccount: () => void
+        onChangeTimerange: () => void
     }
 }
 
@@ -224,6 +237,10 @@ export default Vue.extend({
                 value: 'actions',
                 sortable: false,
             },
+        ],
+        timeRanges: [
+            { text: 'Current Month', value: 'current-month' },
+            { text: 'Last Month', value: 'last-month' },
         ],
         dialog: false,
         dialogDelete: false,
@@ -300,6 +317,17 @@ export default Vue.extend({
         },
         onChangeAccount(value: any) {
             this.$store.dispatch('incomes/setSelectedAccount', value)
+        },
+        onChangeTimerange(value: any) {
+            switch (value) {
+                case 'last-month':
+                    this.$store.dispatch('incomes/setLastMonthTimerange')
+                    break
+                case 'current-month':
+                default:
+                    this.$store.dispatch('incomes/setCurrentTimerange')
+                    break
+            }
         },
         async onReloadData() {
             this.$store.dispatch('incomes/clear')
