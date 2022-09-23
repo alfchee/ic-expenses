@@ -1,9 +1,37 @@
 <template>
-    <v-data-table :headers="headers" :items="expenses" :items-per-page="50">
+    <v-data-table
+        :headers="headers"
+        :items="expenses"
+        :items-per-page="50"
+        :loading="isLoading"
+    >
         <!-- DataTable Header template -->
         <template #top>
             <v-toolbar flat>
-                <v-toolbar-title>Expenses</v-toolbar-title>
+                <v-toolbar-title> Filter </v-toolbar-title>
+                <v-col cols="3" class="mt-5">
+                    <v-select
+                        :items="accounts"
+                        item-value="id"
+                        item-text="name"
+                        label="Account"
+                        :value="selectedAccountId"
+                        @change="onChangeAccount"
+                    />
+                </v-col>
+                <v-col cols="3" class="mt-5">
+                    <v-select
+                        :items="timeRanges"
+                        item-value="value"
+                        item-text="text"
+                        label="Time Range"
+                        value="current-month"
+                        @change="onChangeTimerange"
+                    />
+                </v-col>
+                <v-btn :disabled="!reloadData" @click="onReloadData"
+                    >Reload</v-btn
+                >
                 <v-spacer />
 
                 <!-- Create/Edit Expenses Dialog -->
@@ -122,6 +150,14 @@
             </v-toolbar>
         </template>
 
+        <template #item.dateTime="{ item }">
+            {{ formatDate(item.dateTime) }}
+        </template>
+
+        <template #item.createdAt="{ item }">
+            {{ formatDate(item.createdAt) }}
+        </template>
+
         <template #item.actions="{ item }">
             <v-icon small class="mr-2" @click="editExpense(item)"
                 >mdi-pencil</v-icon
@@ -135,6 +171,8 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import { DateTime } from 'luxon'
+import { Timestamp } from 'firebase/firestore'
 import { mapState } from 'vuex'
 import { Account } from '~/models/account'
 import { Currency } from '~/models/currencies'
@@ -143,6 +181,7 @@ import { Expense } from '~/models/expense'
 declare module 'vue/types/vue' {
     interface Vue {
         headers: any[]
+        timeRanges: any[]
         dialog: boolean
         expenses: Expense[]
         formTitle: string
@@ -150,12 +189,19 @@ declare module 'vue/types/vue' {
         editedIndex: number
         editedExpense: any
         defaultExpense: any
+        reloadData: boolean
+        isLoading: boolean
         editExpense: () => void
         deleteExpense: () => void
         save: () => Promise<void>
         deleteExpenseConfirm: () => Promise<void>
         closeExpenseForm: () => void
         closeDelete: () => void
+        formatDate: () => string
+        fetchExpenses: () => Promise<void>
+        onReloadData: () => Promise<void>
+        onChangeAccount: () => void
+        onChangeTimerange: () => void
     }
 }
 
@@ -186,8 +232,13 @@ export default Vue.extend({
                 sortable: false,
             },
         ],
+        timeRanges: [
+            { text: 'Current Month', value: 'current-month' },
+            { text: 'Last Month', value: 'last-month' },
+        ],
         dialog: false,
         dialogDelete: false,
+        isLoading: false,
         editedIndex: -1,
         editedExpense: {
             amount: 0,
@@ -210,10 +261,15 @@ export default Vue.extend({
     }),
 
     async fetch() {
-        this.$store.dispatch('expenses/clear')
         await this.$store.dispatch('accounts/fetchAccounts')
         await this.$store.dispatch('subcats/fetchSubCategories')
-        await this.$store.dispatch('expenses/fetchExpenses')
+
+        this.$store.dispatch('expenses/setSelectedAccount', this.accounts[0].id)
+
+        if (this.reloadData) {
+            this.$store.dispatch('expenses/clear')
+            await this.fetchExpenses()
+        }
     },
 
     fetchOnServer: false,
@@ -222,11 +278,21 @@ export default Vue.extend({
         formTitle() {
             return this.editedIndex === -1 ? 'New Expense' : 'Edit Expense'
         },
+        titleStartDate() {
+            return DateTime.fromISO(this.startDate).toFormat('dd - LLL - yyyy')
+        },
+        titleEndDate() {
+            return DateTime.fromISO(this.endDate).toFormat('dd - LLL - yyyy')
+        },
         ...mapState({
             expenses: (state: any) => state.expenses.expenses,
             accounts: (state: any) => state.accounts.accounts as Account[],
             currencies: (state: any) => state.accounts.currencies as Currency[],
             subcategories: (state: any) => state.subcats.subcategories,
+            reloadData: (state: any) => state.expenses.reloadData,
+            startDate: (state: any) => state.expenses.dateStart,
+            endDate: (state: any) => state.expenses.dateEnd,
+            selectedAccountId: (state: any) => state.incomes.selectedAccountId,
         }),
     },
 
@@ -241,17 +307,53 @@ export default Vue.extend({
     },
 
     methods: {
+        formatDate(date: string) {
+            return DateTime.fromISO(date).toFormat('dd/LL/yyyy')
+        },
+        onChangeAccount(value: any) {
+            this.$store.dispatch('expenses/setSelectedAccount', value)
+        },
+        onChangeTimerange(value: any) {
+            switch (value) {
+                case 'last-month':
+                    this.$store.dispatch('expenses/setLastMonthTimerange')
+                    break
+                case 'current-month':
+                default:
+                    this.$store.dispatch('expenses/setCurrentTimerange')
+                    break
+            }
+        },
+        async onReloadData() {
+            this.$store.dispatch('expenses/clear')
+            await this.fetchExpenses()
+        },
+        async fetchExpenses() {
+            this.isLoading = true
+            await this.$store.dispatch('expenses/fetchExpenses')
+            this.isLoading = false
+        },
         async save(): Promise<void> {
             if (this.editedIndex === -1) {
-                await this.$store.dispatch(
-                    'expenses/addExpense',
-                    this.editedExpense
-                )
+                await this.$store.dispatch('expenses/addExpense', {
+                    ...this.editedExpense,
+                    dateTime: Timestamp.fromDate(
+                        DateTime.fromISO(this.editedExpense.dateTime).toJSDate()
+                    ),
+                    createdAt: Timestamp.fromDate(
+                        DateTime.fromISO(
+                            this.editedExpense.createdAt
+                        ).toJSDate()
+                    ),
+                })
             } else {
-                await this.$store.dispatch(
-                    'expenses/updateExpense',
-                    this.editedExpense
-                )
+                await this.$store.dispatch('expenses/updateExpense', {
+                    ...this.editedExpense,
+                    dateTime: Timestamp.fromDate(
+                        DateTime.fromISO(this.editedExpense.dateTime).toJSDate()
+                    ),
+                    updatedAt: Timestamp.fromDate(new Date()),
+                })
             }
             this.closeExpenseForm()
         },

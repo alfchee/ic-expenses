@@ -61,14 +61,18 @@ export const actions = {
     clear({ commit }: any) {
         commit('clearSubCats')
     },
-    async fetchSubCategories({ commit }: any) {
-        const firestore = db.getFirestore()
-        const querySnapshot = await getDocs(collection(firestore, 'subcats'))
-        const subcats = querySnapshot.docs.map((doc) => {
-            return { id: doc.id, ...doc.data() } as SubCategory
-        })
+    async fetchSubCategories({ commit, state }: any) {
+        if (state.subcategories.length === 0) {
+            const firestore = db.getFirestore()
+            const querySnapshot = await getDocs(
+                collection(firestore, 'subcats')
+            )
+            const subcats = querySnapshot.docs.map((doc) => {
+                return { id: doc.id, ...doc.data() } as SubCategory
+            })
 
-        commit('setSubCategories', subcats)
+            commit('setSubCategories', subcats)
+        }
     },
 
     async addSubCategory({ commit }: any, subcat: SubCategory) {

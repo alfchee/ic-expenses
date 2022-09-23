@@ -43,14 +43,20 @@ export const actions = {
     clear({ commit }: any) {
         commit('clearAccounts')
     },
-    async fetchAccounts({ commit }: any) {
-        const firestore = db.getFirestore()
-        const querySnapshot = await getDocs(collection(firestore, 'accounts'))
-        const accounts = querySnapshot.docs.map((doc) => {
-            return { id: doc.id, ...doc.data() } as Account
-        })
+    async fetchAccounts({ commit, state }: any) {
+        if (state.accounts.length === 0) {
+            const firestore = db.getFirestore()
+            const querySnapshot = await getDocs(
+                collection(firestore, 'accounts')
+            )
+            const accounts = querySnapshot.docs.map((doc) => {
+                return { id: doc.id, ...doc.data() } as Account
+            })
+            // sorting the accounts by name before store them
+            accounts.sort((a, b) => a.name.localeCompare(b.name))
 
-        commit('setAccounts', accounts)
+            commit('setAccounts', accounts)
+        }
     },
 
     async addAccount({ commit }: any, account: Account) {
